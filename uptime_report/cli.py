@@ -2,6 +2,7 @@ from __future__ import print_function, unicode_literals
 
 import versioneer
 from clize import run
+from .config import write_config
 
 
 def uptime():
@@ -16,7 +17,7 @@ def version():
 
 def main(**kwargs):
     """Run the CLI application."""
-    run(uptime, alt=[version], **kwargs)
+    run([uptime, write_config], alt=[version], **kwargs)
 
 if __name__ == '__main__':
     main()
