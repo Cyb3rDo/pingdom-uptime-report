@@ -1,0 +1,2 @@
+include versioneer.py
+include uptime_report/_version.py
