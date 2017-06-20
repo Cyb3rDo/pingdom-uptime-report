@@ -19,7 +19,10 @@ setuptools.setup(
 
     install_requires=[
         'clize>=4.0.0',
-        'PingdomLib>=2.0.0'
+        'PingdomLib>=2.0.0',
+        'enum-compat>=0.0.2',
+        'arrow>=0.10.0',
+        'configobj>=5.0.6',
     ],
 
     classifiers=[

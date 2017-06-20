@@ -1,7 +1,12 @@
 from __future__ import unicode_literals
 
 from clize.converters import file
+from configobj import ConfigObj
 from sigtools import modifiers
+
+from uptime_report.backends import (
+    backend_config, list_backends, get_backend
+)
 
 
 @modifiers.kwoargs('output')
@@ -11,5 +16,8 @@ def write_config(output='-'):
 
     :param output: the path to the file to write.
     """
+    cfg = ConfigObj()
+    for name in list_backends():
+        cfg[name] = dict(backend_config(get_backend(name)))
     with output as fp:
-        fp.write("hi!\n")
+        cfg.write(fp)

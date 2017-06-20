@@ -3,6 +3,7 @@ from __future__ import print_function, unicode_literals
 import versioneer
 from clize import run
 from .config import write_config
+from .backends import list_backends
 
 
 def uptime():
@@ -15,9 +16,14 @@ def version():
     return versioneer.get_version()
 
 
+def backends():
+    """Print supported backends."""
+    return "\n".join(list_backends())
+
+
 def main(**kwargs):
     """Run the CLI application."""
-    run([uptime, write_config], alt=[version], **kwargs)
+    run([uptime, write_config], alt=[version, backends], **kwargs)
 
 if __name__ == '__main__':
     main()
