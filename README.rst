@@ -16,7 +16,10 @@ Installation
 Requirements
 ^^^^^^^^^^^^
 
-This package requires the [PingdomLib](https://github.com/KennethWilke/PingdomLib/) library and [clize](https://github.com/epsy/clize).
+This package requires the PingdomLib_ and clize_ libraries.
+
+.. _PingdomLib: https://github.com/KennethWilke/PingdomLib
+.. _clize: https://github.com/epsy/clize
 
 Licence
 -------
@@ -24,4 +27,4 @@ Licence
 Authors
 -------
 
-`pingdom-uptime-report` was written by `Konstantinos Koukopoulos <koukopoulos@gmail.com>`_.
+`pingdom-uptime-report` was written by `Konstantinos Koukopoulos <http://github.com/kouk>`_.
