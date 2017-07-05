@@ -1,9 +1,9 @@
 from __future__ import print_function, unicode_literals
 
-import versioneer
 from clize import run
 from .config import write_config
 from .backends import list_backends
+from ._version import get_versions
 
 
 def uptime():
@@ -13,7 +13,7 @@ def uptime():
 
 def version():
     """Get the version of this program."""
-    return versioneer.get_version()
+    return get_versions().get('version', 'unknown')
 
 
 def backends():

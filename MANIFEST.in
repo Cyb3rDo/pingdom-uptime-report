@@ -1,2 +1,4 @@
+include LICENSE *.rst
 include versioneer.py
-include uptime_report/_version.py
+#include src/uptime_report/_version.py
+recursive-include tests *.py

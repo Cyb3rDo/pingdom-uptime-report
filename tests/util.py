@@ -1,9 +1,9 @@
 import sys
 from contextlib import contextmanager
-from six import StringIO
+from six import BytesIO
 
 
-class TeeIO(StringIO):
+class TeeIO(BytesIO):
     """Like UNIX tee but for python streams.
 
     Inspired by CarbonCopy from Fabric.
@@ -15,10 +15,10 @@ class TeeIO(StringIO):
         :param pipe: a writable stream (default: sys.stdout).
         """
         self.pipe = pipe if pipe is not None else sys.stdout
-        StringIO.__init__(self, *args, **kwargs)
+        BytesIO.__init__(self, *args, **kwargs)
 
     def write(self, s):
-        StringIO.write(self, s)
+        BytesIO.write(self, s)
         self.pipe.write(s)
 
     @contextmanager

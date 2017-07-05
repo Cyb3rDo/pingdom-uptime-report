@@ -10,7 +10,7 @@ from uptime_report.backends import (
 
 
 @modifiers.kwoargs('output')
-@modifiers.annotate(output=file(keep_stdio_open=True, mode='w'))
+@modifiers.annotate(output=file(keep_stdio_open=True, mode='wb'))
 def write_config(output='-'):
     """Write out a sample config file. Use '-' for stdout.
 
@@ -18,6 +18,8 @@ def write_config(output='-'):
     """
     cfg = ConfigObj()
     for name in list_backends():
-        cfg[name] = dict(backend_config(get_backend(name)))
+        cfg[name] = {}
+        for setting, value in backend_config(get_backend(name)):
+            cfg[name][setting] = value
     with output as fp:
-        cfg.write(fp)
+        cfg.write(getattr(fp, 'buffer', fp))

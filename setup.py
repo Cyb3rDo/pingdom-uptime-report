@@ -15,7 +15,8 @@ setuptools.setup(
     description="Generate uptime reports using the Pingdom API.",
     long_description=open('README.rst').read(),
 
-    packages=setuptools.find_packages(),
+    packages=setuptools.find_packages(where='src'),
+    package_dir={"": "src"},
 
     install_requires=[
         'clize>=4.0.0',
@@ -23,6 +24,7 @@ setuptools.setup(
         'enum-compat>=0.0.2',
         'arrow>=0.10.0',
         'configobj>=5.0.6',
+        'lazy-object-proxy>=1.3.1',
     ],
 
     classifiers=[
