@@ -4,8 +4,8 @@ import enum
 
 from functools import partial
 from six.moves import map
-from uptime_report.outage import ResultType, Result
-from uptime_report.backend_utils import offset_iter
+from uptime_report.outage import ResultType, Result, Outage
+from uptime_report.backend_utils import offset_iter, group_by_range
 from pingdomlib import Pingdom
 
 
@@ -37,6 +37,22 @@ def check_results(check, start=None, finish=None, *args, **kwargs):
     data = check.results(
         time_from=start, time_to=finish, *args, **kwargs)
     return map(partial(make_result, check), data['results'])
+
+
+def outages_from_results(results):
+    ranges = group_by_range(
+        results,
+        lambda r: r.type != ResultType.UP,
+        lambda r: r.meta.get('probeid'))
+    for before, range, after in ranges:
+        first = last = None
+        if before:  # beginning of an outage
+            first = range[0]
+        if after:   # end of an outage
+            last = range[-1]
+        yield Outage(
+            start=first.time.timestamp if first else None,
+            finish=last.time.timestamp if last else None)
 
 
 @attr.s
@@ -71,6 +87,10 @@ class PingdomBackend(object):
                 check_results, check, start=start, finish=finish)
             for result in offset_iter(getter, *args, **kwargs):
                 yield result
+
+    def get_outages(self, *args, **kwargs):
+        results = self.get_results(*args, **kwargs)
+        return outages_from_results(results)
 
     @classmethod
     def defaults(cls):
