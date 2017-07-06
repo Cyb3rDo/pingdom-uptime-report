@@ -18,3 +18,19 @@ def test_merge_outages(outage_data):
         (1499592481, 1499606881),
         (1499628481, None)
     ]
+
+
+def test_merge_outages_overlap(outage_data):
+    outages = [Outage(start=o[0], finish=o[1])
+               for o in outage_data]
+
+    merged = [(o.start.timestamp if o.start else None,
+               o.finish.timestamp if o.finish else None)
+              for o in merge_outages(outages, overlap=4000)]
+    assert merged == [
+        (None, 1499387281),
+        (1499416081, 1499416081),
+        (1499434081, 1499570881),
+        (1499592481, 1499606881),
+        (1499628481, None)
+    ]
