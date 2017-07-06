@@ -2,11 +2,30 @@
 import enum
 from functools import partial
 
+import arrow
 import attr
+from attr.validators import in_
 from pingdomlib import Pingdom
 from six.moves import map
 from uptime_report.backend_utils import group_by_range, offset_iter
-from uptime_report.outage import Outage, Result, ResultType
+from uptime_report.outage import Outage
+
+
+class ResultType(enum.Enum):
+    UP = "up"
+    DOWN = "down"
+    UNCONFIRMED = "unconfirmed"
+    UNKNOWN = "unknown"
+
+
+@attr.s
+class Result(object):
+    """Base result class."""
+
+    time = attr.ib(convert=arrow.get)
+    check = attr.ib()
+    type = attr.ib(validator=in_(ResultType))
+    meta = attr.ib(default=attr.Factory(dict))
 
 
 class PingdomStatus(enum.Enum):
