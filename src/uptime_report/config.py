@@ -3,10 +3,7 @@ from __future__ import unicode_literals
 from clize.converters import file
 from configobj import ConfigObj
 from sigtools import modifiers
-
-from uptime_report.backends import (
-    backend_config, list_backends, get_backend
-)
+from uptime_report.backends import backend_config, get_backend, list_backends
 
 
 @modifiers.kwoargs('output')

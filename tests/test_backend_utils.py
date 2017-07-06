@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-from uptime_report.backend_utils import offset_iter, group_by_range
+from uptime_report.backend_utils import group_by_range, offset_iter
 
 
 def test_offset_iter_none(mocker):

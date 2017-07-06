@@ -1,4 +1,5 @@
 from collections import defaultdict, deque
+
 from sigtools.modifiers import kwoargs
 
 
@@ -11,10 +12,11 @@ def offset_iter(method, limit=1000, offset=0, *args, **kwargs):
     less than limit items are returned, yielding each item.
     """
     previous = -limit
-    while previous < offset and not (offset - previous) % limit:
-        previous = offset
-        data = method(limit=limit, offset=offset, *args, **kwargs)
-        for offset, result in enumerate(data, start=offset+1):
+    o = offset
+    while previous < o and not (o - previous) % limit:
+        previous = o
+        data = method(limit=limit, offset=o, *args, **kwargs)
+        for o, result in enumerate(data, start=(o + 1)):
             yield result
 
 
@@ -36,10 +38,10 @@ def group_by_range(it, pred, keyfunc=None):
                         item
                     )
                 sentinels[key].append(item)
-        for key, range in ranges.items():
+        for k, r in ranges.items():
             yield (
-                sentinels[key][0],
-                list(range),
+                sentinels[k][0],
+                list(r),
                 None
             )
     return yielder(it)

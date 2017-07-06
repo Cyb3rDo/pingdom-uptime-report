@@ -1,12 +1,12 @@
 """Pingdom backend for uptime data."""
-import attr
 import enum
-
 from functools import partial
-from six.moves import map
-from uptime_report.outage import ResultType, Result, Outage
-from uptime_report.backend_utils import offset_iter, group_by_range
+
+import attr
 from pingdomlib import Pingdom
+from six.moves import map
+from uptime_report.backend_utils import group_by_range, offset_iter
+from uptime_report.outage import Outage, Result, ResultType
 
 
 class PingdomStatus(enum.Enum):
@@ -25,8 +25,8 @@ def make_result(check, item):
     return Result(
         time=item.get('time'),
         meta={
-           'probeid': item.get('probeid'),
-           'desc': item.get('statusdesc'),
+            'probeid': item.get('probeid'),
+            'desc': item.get('statusdesc'),
         },
         check=check,
         type=PingdomStatus(item.get('status')).to_result(),
@@ -44,12 +44,12 @@ def outages_from_results(results):
         results,
         lambda r: r.type != ResultType.UP,
         lambda r: r.meta.get('probeid'))
-    for before, range, after in ranges:
+    for before, data, after in ranges:
         first = last = None
         if before:  # beginning of an outage
-            first = range[0]
+            first = data[0]
         if after:   # end of an outage
-            last = range[-1]
+            last = data[-1]
         yield Outage(
             start=first.time.timestamp if first else None,
             finish=last.time.timestamp if last else None)
@@ -102,5 +102,6 @@ class PingdomBackend(object):
     @classmethod
     def from_config(cls, config=None):
         return cls(**{a: config[a] for a, _ in cls.defaults() if a in config})
+
 
 backend = PingdomBackend

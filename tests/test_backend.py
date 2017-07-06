@@ -1,10 +1,10 @@
 from __future__ import unicode_literals
-import pytest
-import py.path
 
+import py.path
+import pytest
 from configobj import ConfigObj
 from uptime_report import cli
-from uptime_report.backends import backend_config, list_backends, get_backend
+from uptime_report.backends import backend_config, get_backend, list_backends
 
 
 def test_backend_config_nokeys(mocker):
@@ -66,6 +66,6 @@ def config(configdir, request):
 
 
 @pytest.mark.parametrize(
-    'backend,config', zip(*[list_backends()]*2), indirect=['backend', 'config'])  # noqa
+    'backend,config', zip(*[list_backends()] * 2), indirect=['backend', 'config'])  # noqa
 def test_from_config(backend, config):
     backend.from_config(config)

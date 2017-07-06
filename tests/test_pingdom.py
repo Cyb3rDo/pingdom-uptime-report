@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
+
 import arrow
 import pytest
-
 from uptime_report.backends import pingdom
 
 

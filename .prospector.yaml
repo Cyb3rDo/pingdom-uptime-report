@@ -1,0 +1,17 @@
+strictness: medium
+test-warnings: false
+autodetect: false
+member-warnings: false
+
+pep257:
+  run: true
+  disable:
+    - D203
+    - D213
+
+ignore-patterns:
+  - '/migrations/[0-9]{4}_[_a-zA-Z0-9]+.py$'
+ignore-paths:
+  - src/uptime_report/_version.py
+  - versioneer.py
+  - build

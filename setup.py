@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-import versioneer
-
 import setuptools
+
+import versioneer
 
 setuptools.setup(
     name="pingdom-uptime-report",
@@ -16,6 +16,7 @@ setuptools.setup(
     long_description=open('README.rst').read(),
 
     packages=setuptools.find_packages(where='src'),
+    zip_safe=True,
     package_dir={"": "src"},
 
     install_requires=[
@@ -42,4 +43,5 @@ setuptools.setup(
             'uptimereport = uptime_report.cli:main',
         ]
     },
+    keywords="pingdom uptime sla api"
 )

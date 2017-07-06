@@ -1,0 +1,26 @@
+-   repo: https://github.com/pre-commit/pre-commit-hooks.git
+    sha: v0.9.1
+    hooks:
+    -   id: trailing-whitespace
+    -   id: end-of-file-fixer
+    -   id: autopep8-wrapper
+    -   id: check-docstring-first
+    -   id: check-ast
+    -   id: check-json
+    -   id: check-merge-conflict
+    -   id: check-added-large-files
+    -   id: check-yaml
+    -   id: debug-statements
+    -   id: requirements-txt-fixer
+-   repo: https://github.com/guykisel/prospector-mirror.git
+    sha: e0bfe1f71f9b6c81c5b8b8ffece9d89b0142c4b8
+    hooks:
+    -   id: prospector
+        files: ^src/
+        exclude: _version.py
+-   repo: git://github.com/FalconSocial/pre-commit-python-sorter
+    sha: 1.0.4
+    hooks:
+    -   id: python-import-sorter
+        args:
+        - --diff
