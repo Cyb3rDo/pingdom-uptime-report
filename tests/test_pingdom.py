@@ -1,7 +1,35 @@
 from __future__ import unicode_literals
 import arrow
+import pytest
 
 from uptime_report.backends import pingdom
+
+
+@pytest.fixture
+def pingdom_result_data(result_data):
+    """A list of raw pingdom results."""
+    seen = set()
+
+    def mktype(down, n):
+        """Mimic how pingdom reports failed tests."""
+        if down:
+            if n in seen:
+                return 'down'
+            seen.add(n)
+            return 'unconfirmed'
+        if n in seen:
+            seen.remove(n)
+        return 'up'
+
+    return [
+        {
+            'check': 'foo',
+            'type':  mktype(down, n),
+            'time': t,
+            'meta': {'probeid': n}
+        }
+        for n, down, t in result_data
+    ]
 
 
 def test_pingdom_status():
@@ -92,55 +120,21 @@ def test_get_results(mocker):
     assert results[0].type == pingdom.ResultType.DOWN
 
 
-def test_outages_from_results(mocker, range_data):
+def test_outages_from_results(mocker, pingdom_result_data, outage_data):
     """Test outages_from_results."""
-    now = arrow.utcnow().replace(microsecond=0)
-
-    probes = set()
-
-    def mktype(f, n):
-        """Mimic how pingdom reports failed tests."""
-        if f:
-            if n in probes:
-                return pingdom.ResultType.DOWN
-            probes.add(n)
-            return pingdom.ResultType.UNCONFIRMED
-        if n in probes:
-            probes.remove(n)
-        return pingdom.ResultType.UP
-
     results = [
         pingdom.Result(
-            check='foo',
-            type=mktype(f, n),
-            time=now.replace(hours=t),
-            meta={'probeid': n}
+            check=d['check'],
+            type=pingdom.ResultType(d['type']),
+            time=d['time'],
+            meta=d['meta']
         )
-        for n, f, t in range_data
+        for d in pingdom_result_data
     ]
     outages = pingdom.outages_from_results(results)
-    assert [(o.start, o.finish) for o in outages] == [
-        (None, results[10].time),
-        (None, results[15].time),
-        (results[11].time, results[11].time),
-        (results[1].time, results[8].time),
-        (results[23].time, results[23].time),
-        (results[28].time, results[37].time),
-        (results[42].time, results[42].time),
-        (results[36].time, results[40].time),
-        (results[31].time, results[44].time),
-        (results[50].time, results[50].time),
-        (results[56].time, results[56].time),
-        (results[46].time, results[49].time),
-        (results[55].time, results[55].time),
-        (results[62].time, results[62].time),
-        (results[38].time, results[64].time),
-        (results[61].time, results[61].time),
-        (results[73].time, results[74].time),
-        (results[65].time, results[66].time),
-        (results[88].time, results[88].time),
-        (results[72].time, results[76].time),
-        (results[82].time, None),
-        (results[90].time, None),
-        (results[87].time, None),
+
+    assert outage_data == [
+        (o.start.timestamp if o.start else None,
+         o.finish.timestamp if o.finish else None)
+        for o in outages
     ]
