@@ -48,8 +48,16 @@ def test_offset_iter_args(mocker):
 
 def test_group_by_range(result_data, range_data):
     ranges = list(group_by_range(result_data, lambda x: x[1], lambda x: x[0]))
+    ranges.sort(key=lambda g: g[1][0][2])
+    assert ranges == range_data
+
+
+def test_group_by_range_reversed(result_data, range_data):
+    data = reversed(result_data)
+    ranges = list(group_by_range(data, lambda x: x[1], lambda x: x[0]))
+    ranges.sort(key=lambda g: g[1][-1][2])
     assert ranges == [
-        ((id, False, start) if start else None,
-         [(id, True, t) for t in results],
-         (id, False, end) if end else None)
-        for id, start, results, end in range_data]
+        (end,
+         list(reversed(results)),
+         start)
+        for start, results, end in range_data]

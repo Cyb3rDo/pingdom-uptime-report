@@ -1,5 +1,6 @@
 """Pingdom backend for uptime data."""
 import enum
+import logging
 from functools import partial
 
 import arrow
@@ -8,7 +9,9 @@ from attr.validators import in_
 from pingdomlib import Pingdom
 from six.moves import map
 from uptime_report.backend_utils import group_by_range, offset_iter
-from uptime_report.outage import Outage
+from uptime_report.outage import Outage, merge_outages
+
+log = logging.getLogger(__name__)
 
 
 class ResultType(enum.Enum):
@@ -58,20 +61,26 @@ def check_results(check, start=None, finish=None, *args, **kwargs):
     return map(partial(make_result, check), data['results'])
 
 
-def outages_from_results(results):
+def outages_from_results(results, group_by=None):
     ranges = group_by_range(
         results,
-        lambda r: r.type != ResultType.UP,
-        lambda r: r.meta.get('probeid'))
-    for before, data, after in ranges:
-        first = last = None
-        if before:  # beginning of an outage
-            first = data[0]
-        if after:   # end of an outage
-            last = data[-1]
+        lambda r: r.type == ResultType.DOWN,
+        group_by)
+    for after, data, before in ranges:
+        if before and before.type == ResultType.UNCONFIRMED:
+            data.append(before)  # include the unconfirmed down
+        first = data[-1]
+        last = data[0]
+        log.debug("found outage between %s and %s: %s", first, last, data)
+        meta = {}   # set up groups for this outage
+        if group_by:
+            meta = {'group': group_by(data[0])}
         yield Outage(
-            start=first.time.timestamp if first else None,
-            finish=last.time.timestamp if last else None)
+            start=first.time,
+            finish=last.time,
+            before=before.time if before else None,
+            after=after.time if after else None,
+            meta=meta)
 
 
 @attr.s
@@ -92,24 +101,32 @@ class PingdomBackend(object):
         return offset_iter(self._connection.getChecks)
 
     def get_results(self, start=None, finish=None,
-                    status=None, *args, **kwargs):
+                    status=None, checks=None, *args, **kwargs):
         """Iterate over results in the given timeframe.
 
         :param start: int, timestamp
         :param finish: int, timestamp
         :param status: list, a list of uptime_report.outage.ResultType values
+        :param checks: list, a list of check IDs
         """
         if status is not None:
             kwargs['status'] = ",".join(s.value for s in status)
         for check in self.get_checks():
+            if checks and check.id not in checks:
+                continue
+            log.debug("%s: processing check %s", self, check)
             getter = partial(
                 check_results, check, start=start, finish=finish)
-            for result in offset_iter(getter, *args, **kwargs):
+            n = 0
+            for n, result in enumerate(offset_iter(getter, *args, **kwargs)):
                 yield result
+            log.debug("%s: processed check %s: %s results", self, check, n)
 
     def get_outages(self, *args, **kwargs):
-        results = self.get_results(*args, **kwargs)
-        return outages_from_results(results)
+        return merge_outages(
+            outages_from_results(
+                self.get_results(checks=[173494], *args, **kwargs)),
+            overlap=30)  # TODO Make this a config option
 
     @classmethod
     def defaults(cls):

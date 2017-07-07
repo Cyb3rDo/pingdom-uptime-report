@@ -11,6 +11,9 @@ class Outage(object):
 
     start = attr.ib(convert=optional(arrow.get))
     finish = attr.ib(convert=optional(arrow.get))
+    before = attr.ib(convert=optional(arrow.get), default=None)
+    after = attr.ib(convert=optional(arrow.get), default=None)
+    meta = attr.ib(default=attr.Factory(dict))
 
 
 def merge_outages(outages, overlap=0):
@@ -30,19 +33,22 @@ def merge_outages(outages, overlap=0):
         """Combine changes to create new ranges."""
         start = None               # placeholder
         n = 0                      # the number of range openings
-        for t, state in changes:
+        for t, state, outage in changes:
             if t and state < 0:    # range close, correct overlap
                 t -= overlap
             if n == 0:             # new range starting
                 start = t
+                outages = []
             n += state             # count open ranges
+            if outage:
+                outages.append(outage)
             if n == 0:             # all ranges closed
-                yield start, t
+                yield start, t, outages
 
     def change(outage):
         start = outage.start.timestamp if outage.start else None
         finish = outage.finish.timestamp + overlap if outage.finish else None
-        return ((start, 1), (finish, -1))
+        return ((start, 1, outage), (finish, -1, None))
 
     # flatten the outages into a list of open or close changes
     flat = chain.from_iterable(change(o) for o in outages)
@@ -51,5 +57,12 @@ def merge_outages(outages, overlap=0):
     outage_changes = sorted(flat, key=sortkey)
 
     # make new outage objects from new ranges
-    for start, finish in make_ranges(outage_changes):
-        yield Outage(start=start, finish=finish)
+    for start, finish, data in make_ranges(outage_changes):
+        # combine groups
+        groups = set([group
+                      for outage in data
+                      for group in outage.meta.get('groups', [])])
+        meta = {}
+        if groups:
+            meta = {'groups': groups}
+        yield Outage(start=start, finish=finish, meta=meta)

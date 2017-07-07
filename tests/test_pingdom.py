@@ -6,30 +6,26 @@ from uptime_report.backends import pingdom
 
 
 @pytest.fixture
-def pingdom_result_data(result_data):
+def pingdom_results(result_data):
     """A list of raw pingdom results."""
-    seen = set()
 
-    def mktype(down, n):
+    def mktype(down):
         """Mimic how pingdom reports failed tests."""
-        if down:
-            if n in seen:
-                return 'down'
-            seen.add(n)
-            return 'unconfirmed'
-        if n in seen:
-            seen.remove(n)
-        return 'up'
+        while True:
+            while not down:
+                down = yield pingdom.ResultType.UP
+            down = yield pingdom.ResultType.UNCONFIRMED
+            while down:
+                down = yield pingdom.ResultType.DOWN
+    mkt = mktype(False)
+    mkt.send(None)
 
-    return [
-        {
-            'check': 'foo',
-            'type':  mktype(down, n),
-            'time': t,
-            'meta': {'probeid': n}
-        }
-        for n, down, t in result_data
-    ]
+    data = [pingdom.Result(check='foo',
+                           type=mkt.send(down),
+                           time=t,
+                           meta={'probeid': n})
+            for n, down, t in result_data]
+    return reversed(data)
 
 
 def test_pingdom_status():
@@ -120,21 +116,25 @@ def test_get_results(mocker):
     assert results[0].type == pingdom.ResultType.DOWN
 
 
-def test_outages_from_results(mocker, pingdom_result_data, outage_data):
+def test_outages_from_results(mocker, pingdom_results, outage_data):
     """Test outages_from_results."""
-    results = [
-        pingdom.Result(
-            check=d['check'],
-            type=pingdom.ResultType(d['type']),
-            time=d['time'],
-            meta=d['meta']
-        )
-        for d in pingdom_result_data
-    ]
-    outages = pingdom.outages_from_results(results)
+    outages = list(pingdom.outages_from_results(
+        pingdom_results,
+        group_by=lambda r: r.meta['probeid']))
+    outages.sort(key=lambda o: o.start.timestamp)
 
     assert outage_data == [
-        (o.start.timestamp if o.start else None,
+        (o.meta['group'],
+         o.start.timestamp if o.start else None,
          o.finish.timestamp if o.finish else None)
         for o in outages
     ]
+
+
+def test_outages_from_results_ungrouped(
+        mocker, pingdom_results, ungrouped_outage_data):
+    """Test outages_from_results without grouping by probeid."""
+    outages = [(o.start.timestamp if o.start else None,
+                o.finish.timestamp if o.finish else None)
+               for o in pingdom.outages_from_results(pingdom_results)]
+    assert list(reversed(ungrouped_outage_data)) == outages

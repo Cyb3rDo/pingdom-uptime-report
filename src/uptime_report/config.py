@@ -1,9 +1,14 @@
-from __future__ import unicode_literals
+from __future__ import print_function, unicode_literals
+
+import logging
+from os.path import expanduser
 
 from clize.converters import file
 from configobj import ConfigObj
 from sigtools import modifiers
 from uptime_report.backends import backend_config, get_backend, list_backends
+
+log = logging.getLogger(__name__)
 
 
 @modifiers.kwoargs('output')
@@ -20,3 +25,11 @@ def write_config(output='-'):
             cfg[name][setting] = value
     with output as fp:
         cfg.write(getattr(fp, 'buffer', fp))
+
+
+def read_config(config='~/.config/uptime_report.cfg'):
+    try:
+        return ConfigObj(expanduser(config))
+    except IOError as e:
+        log.exception("reading config file %s", config)
+        print("Error reading config file: {}".format(e))

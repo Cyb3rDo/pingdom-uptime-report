@@ -1,4 +1,4 @@
-from collections import defaultdict, deque
+from collections import OrderedDict, defaultdict
 
 from sigtools.modifiers import kwoargs
 
@@ -22,26 +22,26 @@ def offset_iter(method, limit=1000, offset=0, *args, **kwargs):
 
 def group_by_range(it, pred, keyfunc=None):
     """Return contiguous ranges of items satisfying a predicate."""
-    ranges = defaultdict(deque)
-    sentinels = defaultdict(lambda: deque([None], maxlen=1))
-
-    def yielder(src):
-        for item in src:
-            key = keyfunc(item) if keyfunc else item
-            if pred(item):
-                ranges[key].append(item)
-            else:
-                if key in ranges:
-                    yield (
-                        sentinels[key][0],
-                        list(ranges.pop(key)),
-                        item
-                    )
-                sentinels[key].append(item)
-        for k, r in ranges.items():
-            yield (
-                sentinels[k][0],
-                list(r),
-                None
-            )
-    return yielder(it)
+    ranges = OrderedDict()
+    sentinels = defaultdict(lambda: None)
+    key = "default"
+    for item in it:
+        key = keyfunc(item) if keyfunc else key
+        if pred(item):
+            ranges.setdefault(key, []).append(item)
+        else:
+            previous_sentinel = sentinels[key]
+            next_sentinel = item
+            if key in ranges:
+                yield (
+                    previous_sentinel,
+                    list(ranges.pop(key)),
+                    next_sentinel
+                )
+            sentinels[key] = next_sentinel
+    for k, r in ranges.items():
+        yield (
+            sentinels[k],
+            list(r),
+            None
+        )
