@@ -16,6 +16,14 @@ class Outage(object):
     meta = attr.ib(default=attr.Factory(dict))
 
 
+def encode_outage(obj):
+    if isinstance(obj, Outage):
+        return attr.asdict(obj)
+    if isinstance(obj, arrow.Arrow):
+        return obj.for_json()
+    raise TypeError(repr(obj) + " is not JSON serializable")
+
+
 def merge_outages(outages, overlap=0):
     """Merge a list of Outage objects."""
     beginning_of_time = arrow.get(0).replace(microsecond=0)

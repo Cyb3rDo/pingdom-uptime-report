@@ -1,5 +1,6 @@
 from __future__ import print_function, unicode_literals
 
+import json
 import logging
 
 import arrow
@@ -8,6 +9,7 @@ from sigtools import modifiers, wrappers
 from uptime_report._version import get_versions
 from uptime_report.backends import get_backend, list_backends
 from uptime_report.config import read_config, write_config
+from uptime_report.outage import encode_outage
 
 try:
     import requests_cache
@@ -56,9 +58,9 @@ def outages(start, finish, backend='pingdom'):
         print("Missing configuration for backend {}".format(backend))
     else:
         impl = get_backend(backend).from_config(config)
-        print("\n".join(repr(o)
-                        for o in impl.get_outages(
-            start=start.timestamp, finish=finish.timestamp)))
+        outages = impl.get_outages(
+            start=start.timestamp, finish=finish.timestamp)
+        print(json.dumps(list(outages), indent=4, default=encode_outage))
 
 
 def version():
