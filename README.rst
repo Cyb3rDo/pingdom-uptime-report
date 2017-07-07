@@ -10,6 +10,10 @@ Generate uptime reports using the Pingdom API.
 Usage
 -----
 
+Example:
+
+   uptime_report outages --log-level info --use-cache  '2017-06-01' '2017-07-01'
+
 Installation
 ------------
 

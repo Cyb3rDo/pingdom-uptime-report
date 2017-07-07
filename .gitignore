@@ -104,3 +104,4 @@ ENV/
 .mr.developer.cfg
 .project
 .pydevproject
+cache.sqlite
