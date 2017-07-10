@@ -74,3 +74,23 @@ def merge_outages(outages, overlap=0):
         if groups:
             meta = {'groups': groups}
         yield Outage(start=start, finish=finish, meta=meta)
+
+
+def print_outages(outages):
+    for i, outage in enumerate(outages):
+        print("Outage #{}\nBegin: {}\tEnd: {}\n{}\n".format(
+            i, outage.start.format(), outage.finish.format(),
+            outage.start.humanize(
+                other=outage.finish, only_distance=True)))
+
+
+def filter_outage_len(outages, minlen=0):
+    for o in outages:
+        if (o.finish - o.start).seconds >= minlen:
+            yield o
+
+
+def get_outages(backend, overlap=0, minlen=0, **kwargs):
+    all_outages = backend.get_outages(**kwargs)
+    outages = filter_outage_len(all_outages, minlen=minlen)
+    return merge_outages(outages, overlap=overlap)
