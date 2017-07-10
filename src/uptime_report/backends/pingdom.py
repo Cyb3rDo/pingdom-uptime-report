@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Pingdom backend for uptime data."""
 import enum
 import logging
@@ -56,6 +57,8 @@ def make_result(check, item):
 
 
 def check_results(check, start=None, finish=None, *args, **kwargs):
+    if 'offset' in kwargs and kwargs['offset'] > 43200:
+        return []  # Pingdom doesn't allow more than 43200
     data = check.results(
         time_from=start, time_to=finish, *args, **kwargs)
     return map(partial(make_result, check), data['results'])

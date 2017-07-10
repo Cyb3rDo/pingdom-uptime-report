@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
 import arrow
@@ -114,6 +115,30 @@ def test_get_results(mocker):
     assert results[0].meta == {'probeid': data['probeid'], 'desc': None}
     assert results[0].check == check
     assert results[0].type == pingdom.ResultType.DOWN
+
+
+def test_get_max_results(mocker):
+    """Test .get_results with more than the maximum number."""
+    finish = arrow.utcnow()
+    start = finish.replace(days=-30)
+    mocker.patch('uptime_report.backends.pingdom.Pingdom')
+    b = pingdom.PingdomBackend('user', 'pass', 'key')
+    check = mocker.Mock()
+    data = {
+        'time': start.timestamp,
+        'probeid': 1,
+        'status': 'down'
+    }
+    check.results.side_effect = [{'results': [data] * 1000}] * 45
+    pingdom.Pingdom.return_value.getChecks.side_effect = [[check]]
+    it = b.get_results(start=start.timestamp, finish=finish.timestamp)
+    results = list(it)
+    check.results.assert_any_call(
+        offset=43000, limit=1000,
+        time_from=start.timestamp, time_to=finish.timestamp
+    )
+    check.results.call_count = 43
+    assert len(results) == 44000
 
 
 def test_outages_from_results(mocker, pingdom_results, outage_data):
