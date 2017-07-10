@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals
 
 import json
@@ -39,8 +40,8 @@ def get_log_level(level):
 @modifiers.kwoargs('log_level', 'use_cache')
 @modifiers.annotate(log_level=get_log_level)
 def with_common_args(
-        wrapped, log_level=logging.ERROR, use_cache=False, *args, **kwargs):
-    logging.basicConfig(level=log_level)
+        wrapped, log_level=None, use_cache=False, *args, **kwargs):
+    logging.basicConfig(level=log_level or logging.ERROR)
     if use_cache:
         if requests_cache:
             requests_cache.install_cache()
@@ -49,10 +50,25 @@ def with_common_args(
     return wrapped(*args, **kwargs)
 
 
-@with_common_args
-@modifiers.kwoargs('backend', 'to_json')
+@wrappers.decorator
+@modifiers.kwoargs('overlap', 'minlen')
 @modifiers.annotate(start=to_arrow, finish=to_arrow)
-def outages(start, finish, overlap=0, to_json=False, backend='pingdom'):
+def with_filters(
+        wrapped, start=None, finish=None, overlap=0, minlen=300,
+        *args, **kwargs):
+    filters = {
+        'start': start.timestamp,
+        'finish': finish.timestamp,
+        'overlap': overlap,
+        'minlen': minlen
+    }
+    return wrapped(filters=filters, *args, **kwargs)
+
+
+@with_common_args
+@with_filters
+@modifiers.kwoargs('backend', 'to_json')
+def outages(filters=None, to_json=False, backend='pingdom'):
     """List outages."""
     try:
         config = read_config()[backend]
@@ -60,9 +76,7 @@ def outages(start, finish, overlap=0, to_json=False, backend='pingdom'):
         print("Missing configuration for backend {}".format(backend))
         sys.exit(1)
     impl = get_backend(backend).from_config(config)
-    outages = get_outages(
-        impl, overlap=overlap, minlen=5 * 60,
-        start=start.timestamp, finish=finish.timestamp)
+    outages = get_outages(impl, **filters)
 
     if to_json:
         print(json.dumps(list(outages), indent=4, default=encode_outage))

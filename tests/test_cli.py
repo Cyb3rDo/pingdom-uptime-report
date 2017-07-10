@@ -1,7 +1,13 @@
+# -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import json
+
+import arrow
+from clize import run
 from six import StringIO
 from uptime_report import cli
+from uptime_report.outage import Outage
 
 
 def test_nothing(mocker):
@@ -27,3 +33,86 @@ def test_help(mocker):
     out = StringIO()
     cli.main(args=['command', '--help'], exit=False, out=out)
     assert 'Usage:' in out.getvalue()
+
+
+def test_outages_empty(mocker):
+    backend = mocker.Mock()
+    backend.get_outages.return_value = []
+    ret = list(cli.get_outages(
+        backend, overlap=300, minlen=5, foo='bar'))
+    backend.get_outages.assert_called_with(foo='bar')
+    assert ret == []
+
+
+def test_outages(capsys, mocker, ungrouped_outage_data):
+    mocker.patch('uptime_report.cli.read_config')
+    b = mocker.patch('uptime_report.cli.get_backend')
+    impl = b.return_value.from_config.return_value
+    impl.get_outages.return_value = [
+        Outage(start=s, finish=f)
+        for s, f in ungrouped_outage_data]
+    overlap = 10800  # 3 hours
+    minlen = 3700    # prune 1 hour outages
+    finish = arrow.utcnow()
+    start = finish.replace(hours=-1)
+    cli.outages(
+        start=start, finish=finish, overlap=overlap,
+        minlen=minlen, to_json=True)
+    impl.get_outages.assert_called_with(
+        start=start.timestamp, finish=finish.timestamp)
+    out, err = capsys.readouterr()
+    assert json.loads(out) == [
+        {'after': None,
+         'before': None,
+         'finish': '2017-07-08T03:28:01+00:00',
+         'meta': {},
+         'start': '2017-07-07T21:28:01+00:00'},
+        {'after': None,
+         'before': None,
+         'finish': '2017-07-08T11:28:01+00:00',
+         'meta': {},
+         'start': '2017-07-08T09:28:01+00:00'},
+        {'after': None,
+         'before': None,
+         'finish': '2017-07-09T03:28:01+00:00',
+         'meta': {},
+         'start': '2017-07-08T22:28:01+00:00'},
+        {'after': None,
+         'before': None,
+         'finish': '2017-07-09T13:28:01+00:00',
+         'meta': {},
+         'start': '2017-07-09T09:28:01+00:00'},
+        {'after': None,
+         'before': None,
+         'finish': '2017-07-10T06:28:01+00:00',
+         'meta': {},
+         'start': '2017-07-09T23:28:01+00:00'}
+    ]
+
+
+def test_with_common_args(mocker):
+    mocker.patch('uptime_report.cli.requests_cache')
+    mocker.patch('uptime_report.cli.logging')
+
+    cli.logging.ERROR = 'errz'
+    cli.logging.DEBUG = 'blabla'
+    del cli.logging.SILENCIO
+
+    @cli.with_common_args
+    def doit():
+        pass
+
+    run(doit, args=('',), exit=False)
+
+    cli.logging.basicConfig.assert_called_with(level='errz')
+
+    doit(use_cache=True)
+    cli.requests_cache.install_cache.assert_called_once()
+
+    run(doit, args=('', '--log-level=debug'), exit=False)
+
+    cli.logging.basicConfig.assert_called_with(level='blabla')
+
+    mock_stderr = StringIO()
+    run(doit, args=('', '--log-level=silencio'), exit=False, err=mock_stderr)
+    assert 'Invalid log level: silencio' in mock_stderr.getvalue()
