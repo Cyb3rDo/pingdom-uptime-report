@@ -100,9 +100,7 @@ def get_outages(backend, overlap=0, minlen=0, **kwargs):
     return merge_outages(outages, overlap=overlap)
 
 
-def get_downtime_in_seconds(**kwargs):
-    outages = get_outages(**kwargs)
-    start, finish = (kwargs.get('start'), kwargs.get('finish'))
+def get_downtime_in_seconds(outages, start=None, finish=None):
     duration = 0
     for o in outages:
         a, b = (o.start, o.finish)
@@ -110,20 +108,20 @@ def get_downtime_in_seconds(**kwargs):
             a = a.timestamp
         else:
             msg = 'an outage began before the filtered period'
-            if start:
+            if start is not None:
                 a = start
                 log.warning(msg)
             else:
-                raise Exception(msg + ' but no start time was specified.')
+                raise ValueError(msg + ' but no start time was specified.')
         if b:
             b = b.timestamp
         else:
             msg = 'an outage ended after the filtered period'
-            if finish:
-                a = finish
+            if finish is not None:
+                b = finish
                 log.warning(msg)
             else:
-                raise Exception(msg + ' but no finish time was specified.')
-        assert b > a
+                raise ValueError(msg + ' but no finish time was specified.')
+        assert b >= a
         duration += (b - a)
     return duration

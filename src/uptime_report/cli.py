@@ -124,7 +124,8 @@ def outages(filters=None, backend=None, to_json=False):
 @with_backend
 def uptime(filters=None, backend=None):
     """Do the uptime reporting stuff."""
-    downtime = get_downtime_in_seconds(backend=backend, **filters)
+    outages = get_outages(backend, **filters)
+    downtime = get_downtime_in_seconds(outages)
     print(downtime)
 
 

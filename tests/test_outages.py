@@ -5,7 +5,8 @@ import json
 
 import arrow
 import pytest
-from uptime_report.outage import Outage, encode_outage, merge_outages
+from uptime_report.outage import (Outage, encode_outage,
+                                  get_downtime_in_seconds, merge_outages)
 
 
 def test_merge_outages(outage_data):
@@ -80,3 +81,23 @@ def test_encode_outage_fail():
     o = Outage(start=s, finish=f, meta={'wut': set()})
     with pytest.raises(TypeError):
         json.dumps(o, indent=4, default=encode_outage)
+
+
+def test_get_downtime(outage_data):
+    assert get_downtime_in_seconds([]) == 0
+    outages = [Outage(start=o[1], finish=o[2])
+               for o in outage_data]
+    assert get_downtime_in_seconds(outages) == 190800
+    outages = [Outage(start=o[1], finish=o[2])
+               for o in outage_data]
+
+    outages[3].start = None
+    with pytest.raises(ValueError):
+        assert get_downtime_in_seconds(outages)
+    assert get_downtime_in_seconds(outages, start=0) == 1499642881
+
+    outages[-3].finish = None
+    with pytest.raises(ValueError):
+        assert get_downtime_in_seconds(outages, start=0)
+    assert get_downtime_in_seconds(
+        outages, start=0, finish=outages[-1].finish.timestamp) == 1499646481
