@@ -4,7 +4,8 @@ from __future__ import unicode_literals
 import json
 
 import arrow
-from clize import run
+import pytest
+from clize import errors, run
 from six import StringIO
 from uptime_report import cli
 from uptime_report.outage import Outage
@@ -59,7 +60,7 @@ def test_outages(capsys, mocker, ungrouped_outage_data):
         start=start, finish=finish, overlap=overlap,
         minlen=minlen, to_json=True)
     impl.get_outages.assert_called_with(
-        start=start.timestamp, finish=finish.timestamp)
+        start=start, finish=finish)
     out, err = capsys.readouterr()
     assert json.loads(out) == [
         {'after': None,
@@ -116,3 +117,16 @@ def test_with_common_args(mocker):
     mock_stderr = StringIO()
     run(doit, args=('', '--log-level=silencio'), exit=False, err=mock_stderr)
     assert 'Invalid log level: silencio' in mock_stderr.getvalue()
+
+
+def test_get_time():
+    now = arrow.utcnow().replace(microsecond=0)
+    with pytest.raises(errors.CliValueError):
+        cli.get_time('-')
+    with pytest.raises(errors.CliValueError):
+        cli.get_time('-2foo')
+    assert cli.get_time('', now) == now.timestamp
+    assert cli.get_time('-2d', now) == now.replace(days=-2).timestamp
+    assert cli.get_time('-2y', now) == now.replace(years=-2).timestamp
+    assert cli.get_time('2017-06-01') == arrow.get('2017-06-01').timestamp
+    assert cli.get_time('-2') == now.replace(days=-2).timestamp

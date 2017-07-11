@@ -3,7 +3,7 @@ from __future__ import print_function, unicode_literals
 
 import json
 import logging
-import sys
+from enum import Enum
 
 import arrow
 from clize import errors, parser, run
@@ -19,12 +19,39 @@ except ImportError:
     requests_cache = None
 
 
-def uptime():
-    """Do the uptime reporting stuff."""
-    pass
+DEFAULT_BACKEND = 'pingdom'
 
 
-to_arrow = parser.value_converter(arrow.get)
+class TimeUnits(Enum):
+    minutes = 'm'
+    hours = 'h'
+    days = 'd'
+    months = 'm'
+    years = 'y'
+
+
+@parser.value_converter
+def get_time(value, now=None):
+    now = arrow.utcnow() if not now else now.replace(microsecond=0)
+    if not value:
+        return now.timestamp
+    if value.startswith('-') or value.startswith('+'):
+        op = value[0]
+        val = value[1:]
+        try:
+            num = ''.join([c for c in val if c.isdigit()])
+            if len(num) < len(val):
+                unit = TimeUnits(val[len(num):])
+            else:
+                unit = TimeUnits('d')
+            d = now.replace(**{unit.name: int(op + num)})
+            return d.timestamp
+        except ValueError:
+            pass
+    try:
+        return arrow.get(value).timestamp
+    except arrow.parser.ParserError as e:
+        raise errors.CliValueError(e)
 
 
 @parser.value_converter
@@ -51,14 +78,26 @@ def with_common_args(
 
 
 @wrappers.decorator
+@modifiers.kwoargs('backend')
+def with_backend(wrapped, backend=DEFAULT_BACKEND, *args, **kwargs):
+    try:
+        config = read_config()[backend]
+    except KeyError:
+        raise errors.CliValueError(
+            "Missing configuration for backend {}".format(backend))
+    impl = get_backend(backend).from_config(config)
+    return wrapped(backend=impl, *args, **kwargs)
+
+
+@wrappers.decorator
 @modifiers.kwoargs('overlap', 'minlen')
-@modifiers.annotate(start=to_arrow, finish=to_arrow)
+@modifiers.annotate(start=get_time, finish=get_time)
 def with_filters(
         wrapped, start=None, finish=None, overlap=0, minlen=300,
         *args, **kwargs):
     filters = {
-        'start': start.timestamp,
-        'finish': finish.timestamp,
+        'start': start,
+        'finish': finish,
         'overlap': overlap,
         'minlen': minlen
     }
@@ -67,21 +106,24 @@ def with_filters(
 
 @with_common_args
 @with_filters
-@modifiers.kwoargs('backend', 'to_json')
-def outages(filters=None, to_json=False, backend='pingdom'):
+@with_backend
+@modifiers.kwoargs('to_json')
+def outages(filters=None, backend=None, to_json=False):
     """List outages."""
-    try:
-        config = read_config()[backend]
-    except KeyError:
-        print("Missing configuration for backend {}".format(backend))
-        sys.exit(1)
-    impl = get_backend(backend).from_config(config)
-    outages = get_outages(impl, **filters)
+    outages = get_outages(backend, **filters)
 
     if to_json:
         print(json.dumps(list(outages), indent=4, default=encode_outage))
     else:
         print_outages(outages)
+
+
+@with_common_args
+@with_filters
+@with_backend
+def uptime(filters=None, backend=None):
+    """Do the uptime reporting stuff."""
+    pass
 
 
 def version():
