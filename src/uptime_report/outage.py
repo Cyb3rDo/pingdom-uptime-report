@@ -1,8 +1,12 @@
+# -*- coding: utf-8 -*-
+import logging
 from itertools import chain
 
 import arrow
 import attr
 from attr.converters import optional
+
+log = logging.getLogger(__name__)
 
 
 @attr.s
@@ -94,3 +98,32 @@ def get_outages(backend, overlap=0, minlen=0, **kwargs):
     all_outages = backend.get_outages(**kwargs)
     outages = filter_outage_len(all_outages, minlen=minlen)
     return merge_outages(outages, overlap=overlap)
+
+
+def get_downtime_in_seconds(**kwargs):
+    outages = get_outages(**kwargs)
+    start, finish = (kwargs.get('start'), kwargs.get('finish'))
+    duration = 0
+    for o in outages:
+        a, b = (o.start, o.finish)
+        if a:
+            a = a.timestamp
+        else:
+            msg = 'an outage began before the filtered period'
+            if start:
+                a = start
+                log.warning(msg)
+            else:
+                raise Exception(msg + ' but no start time was specified.')
+        if b:
+            b = b.timestamp
+        else:
+            msg = 'an outage ended after the filtered period'
+            if finish:
+                a = finish
+                log.warning(msg)
+            else:
+                raise Exception(msg + ' but no finish time was specified.')
+        assert b > a
+        duration += (b - a)
+    return duration

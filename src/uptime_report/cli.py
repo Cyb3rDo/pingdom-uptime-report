@@ -11,7 +11,8 @@ from sigtools import modifiers, wrappers
 from uptime_report._version import get_versions
 from uptime_report.backends import get_backend, list_backends
 from uptime_report.config import read_config, write_config
-from uptime_report.outage import encode_outage, get_outages, print_outages
+from uptime_report.outage import (encode_outage, get_downtime_in_seconds,
+                                  get_outages, print_outages)
 
 try:
     import requests_cache
@@ -123,7 +124,8 @@ def outages(filters=None, backend=None, to_json=False):
 @with_backend
 def uptime(filters=None, backend=None):
     """Do the uptime reporting stuff."""
-    pass
+    downtime = get_downtime_in_seconds(backend=backend, **filters)
+    print(downtime)
 
 
 def version():
