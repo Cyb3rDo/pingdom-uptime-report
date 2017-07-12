@@ -131,14 +131,8 @@ def test_get_max_results(mocker):
     }
     check.results.side_effect = [{'results': [data] * 1000}] * 45
     pingdom.Pingdom.return_value.getChecks.side_effect = [[check]]
-    it = b.get_results(start=start.timestamp, finish=finish.timestamp)
-    results = list(it)
-    check.results.assert_any_call(
-        offset=43000, limit=1000,
-        time_from=start.timestamp, time_to=finish.timestamp
-    )
-    check.results.call_count = 43
-    assert len(results) == 44000
+    with pytest.raises(Exception, message='Maximum value for offset reached.'):
+        list(b.get_results(start=start.timestamp, finish=finish.timestamp))
 
 
 def test_outages_from_results(mocker, pingdom_results, outage_data):
