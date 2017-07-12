@@ -1,9 +1,16 @@
 Pingdom Uptime Report
 =====================
 
+.. image:: https://readthedocs.org/projects/pingdom-uptime-report/badge/?version=latest
+    :target: http://pingdom-uptime-report.readthedocs.io/en/latest/?badge=latest
+    :alt: Documentation Status
+
 .. image:: https://img.shields.io/pypi/v/pingdom-uptime-report.svg
     :target: https://pypi.python.org/pypi/pingdom-uptime-report
     :alt: Latest PyPI version
+
+.. image:: https://travis-ci.org/kouk/pingdom-uptime-report.svg?branch=master
+    :target: https://travis-ci.org/kouk/pingdom-uptime-report
 
 Generate uptime reports using the Pingdom API.
 
