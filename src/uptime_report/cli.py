@@ -53,12 +53,20 @@ DEFAULT_FORMAT = Format.TEXT
 
 
 class TimeUnits(Enum):
-    """Enumeration of time division abbreviations."""
+    """Enumeration of time division abbreviations.
+
+    Attributes:
+        minutes (str): ``m``
+        hours (str): ``h``
+        days (str): ``d``
+        months (str): ``mo``
+        years (str): ``y``
+    """
 
     minutes = 'm'
     hours = 'h'
     days = 'd'
-    months = 'm'
+    months = 'mo'
     years = 'y'
 
 
@@ -76,6 +84,9 @@ def get_time(value, now=None):
         >>> now = arrow.utcnow().replace(microsecond=0).timestamp
         >>> get_time('+2d') == now + 2*60*60*24
         True
+
+    Valid time units for relative values are described in :class:`TimeUnits`.
+    If a time unit is not provided the default is :py:attr:`TimeUnits.days`.
 
     Additionally, for relative values, the current time can be specified by
     passing an :class:`~arrow.arrow.Arrow` instance as the ``now``

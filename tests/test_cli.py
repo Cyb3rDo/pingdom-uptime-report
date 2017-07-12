@@ -123,6 +123,6 @@ def test_get_time():
         cli.get_time('-2foo')
     assert cli.get_time('', now) == now.timestamp
     assert cli.get_time('-2d', now) == now.replace(days=-2).timestamp
+    assert cli.get_time('-2', now) == now.replace(days=-2).timestamp
     assert cli.get_time('-2y', now) == now.replace(years=-2).timestamp
     assert cli.get_time('2017-06-01') == arrow.get('2017-06-01').timestamp
-    assert cli.get_time('-2') == now.replace(days=-2).timestamp
