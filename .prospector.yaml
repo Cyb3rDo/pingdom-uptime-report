@@ -3,9 +3,14 @@ test-warnings: false
 autodetect: false
 member-warnings: false
 
+pep257:
+    run: false
+pyroma:
+    run: true
 ignore-patterns:
   - '/migrations/[0-9]{4}_[_a-zA-Z0-9]+.py$'
 ignore-paths:
+  - uptime_report/_version.py
   - src/uptime_report/_version.py
   - versioneer.py
   - build
