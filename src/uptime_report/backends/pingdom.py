@@ -10,7 +10,7 @@ from attr.validators import in_
 from pingdomlib import Pingdom
 from six.moves import map
 from uptime_report.backend_utils import group_by_range, offset_iter
-from uptime_report.outage import Outage, merge_outages
+from uptime_report.outage import Outage
 
 log = logging.getLogger(__name__)
 
@@ -91,6 +91,7 @@ class PingdomBackend(object):
     username = attr.ib()
     password = attr.ib()
     apikey = attr.ib()
+    include_ok = attr.ib(default=False)
     _connection = attr.ib(init=False)
 
     @_connection.default
@@ -126,10 +127,11 @@ class PingdomBackend(object):
             log.debug("%s: processed check %s: %s results", self, check, n)
 
     def get_outages(self, *args, **kwargs):
-        return merge_outages(
-            outages_from_results(
-                self.get_results(checks=[173494], *args, **kwargs)),
-            overlap=30)  # TODO Make this a config option
+        results = self.get_results(checks=[173494], *args, **kwargs)
+        for outage in outages_from_results(results):
+            if outage.after and self.include_ok:
+                outage.finish = outage.after
+            yield outage
 
     @classmethod
     def defaults(cls):

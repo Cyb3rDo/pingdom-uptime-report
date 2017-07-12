@@ -6,7 +6,8 @@ import json
 import arrow
 import pytest
 from uptime_report.outage import (Outage, encode_outage,
-                                  get_downtime_in_seconds, merge_outages)
+                                  get_downtime_in_seconds, get_outages,
+                                  merge_outages)
 
 
 def test_merge_outages(outage_data):
@@ -101,3 +102,11 @@ def test_get_downtime(outage_data):
         assert get_downtime_in_seconds(outages, start=0)
     assert get_downtime_in_seconds(
         outages, start=0, finish=outages[-1].finish.timestamp) == 1499646481
+
+
+def test_get_outages_empty(mocker):
+    backend = mocker.Mock()
+    backend.get_outages.return_value = []
+    ret = list(get_outages(backend, overlap=300, minlen=5, foo='bar'))
+    backend.get_outages.assert_called_with(foo='bar')
+    assert ret == []

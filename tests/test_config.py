@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
 from tests.util import TeeIO
@@ -10,6 +11,7 @@ def test_write_config_stdout(mocker):
     assert mock_stdout.getvalue() == b"\n".join([
         b"[pingdom]",
         b"apikey = None",
+        b"include_ok = False",
         b"password = None",
         b"username = None",
         b""])

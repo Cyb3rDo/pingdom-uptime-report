@@ -135,6 +135,76 @@ def test_get_max_results(mocker):
         list(b.get_results(start=start.timestamp, finish=finish.timestamp))
 
 
+def test_get_outages(mocker):
+    """Test .get_outages."""
+    finish = arrow.utcnow()
+    start = finish.replace(days=-30)
+    mocker.patch('uptime_report.backends.pingdom.Pingdom')
+    b = pingdom.PingdomBackend('user', 'pass', 'key')
+    check = mocker.Mock(id=173494)
+    data = [{
+        'time': start.replace(minutes=+3).timestamp,
+        'probeid': 1,
+        'status': 'up'
+    },
+        {
+        'time': start.replace(minutes=+2).timestamp,
+        'probeid': 1,
+        'status': 'down'
+    },
+        {
+        'time': start.replace(minutes=+1).timestamp,
+        'probeid': 1,
+        'status': 'up'
+    }]
+    check.results.side_effect = [{'results': data}]
+    pingdom.Pingdom.return_value.getChecks.side_effect = [[check]]
+    it = b.get_outages(start=start.timestamp, finish=finish.timestamp)
+    outages = list(it)
+    check.results.assert_called_once_with(
+        offset=0, limit=1000,
+        time_from=start.timestamp, time_to=finish.timestamp
+    )
+    assert len(outages) == 1
+    assert outages[0].start.timestamp == start.replace(minutes=+2).timestamp
+    assert outages[0].finish.timestamp == start.replace(minutes=+2).timestamp
+
+
+def test_get_outages_include_ok(mocker):
+    """Test .get_outages."""
+    finish = arrow.utcnow()
+    start = finish.replace(days=-30)
+    mocker.patch('uptime_report.backends.pingdom.Pingdom')
+    b = pingdom.PingdomBackend('user', 'pass', 'key', include_ok=True)
+    check = mocker.Mock(id=173494)
+    data = [{
+        'time': start.replace(minutes=+3).timestamp,
+        'probeid': 1,
+        'status': 'up'
+    },
+        {
+        'time': start.replace(minutes=+2).timestamp,
+        'probeid': 1,
+        'status': 'down'
+    },
+        {
+        'time': start.replace(minutes=+1).timestamp,
+        'probeid': 1,
+        'status': 'up'
+    }]
+    check.results.side_effect = [{'results': data}]
+    pingdom.Pingdom.return_value.getChecks.side_effect = [[check]]
+    it = b.get_outages(start=start.timestamp, finish=finish.timestamp)
+    outages = list(it)
+    check.results.assert_called_once_with(
+        offset=0, limit=1000,
+        time_from=start.timestamp, time_to=finish.timestamp
+    )
+    assert len(outages) == 1
+    assert outages[0].start.timestamp == start.replace(minutes=+2).timestamp
+    assert outages[0].finish.timestamp == start.replace(minutes=+3).timestamp
+
+
 def test_outages_from_results(mocker, pingdom_results, outage_data):
     """Test outages_from_results."""
     outages = list(pingdom.outages_from_results(

@@ -36,15 +36,6 @@ def test_help(mocker):
     assert 'Usage:' in out.getvalue()
 
 
-def test_outages_empty(mocker):
-    backend = mocker.Mock()
-    backend.get_outages.return_value = []
-    ret = list(cli.get_outages(
-        backend, overlap=300, minlen=5, foo='bar'))
-    backend.get_outages.assert_called_with(foo='bar')
-    assert ret == []
-
-
 def test_outages(capsys, mocker, ungrouped_outage_data):
     mocker.patch('uptime_report.cli.read_config')
     b = mocker.patch('uptime_report.cli.get_backend')
