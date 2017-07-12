@@ -17,6 +17,8 @@ Example:
 Installation
 ------------
 
+See [docs/installation.rst]().
+
 Requirements
 ^^^^^^^^^^^^
 

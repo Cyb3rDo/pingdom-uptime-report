@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+"""Uptime report outages.
+
+This module contains generic code for processing outages.
+"""
 import csv
 import logging
 from itertools import chain
@@ -9,11 +13,25 @@ import attr
 from attr.converters import optional
 
 log = logging.getLogger(__name__)
+"""Outage module logger."""
 
 
 @attr.s
 class Outage(object):
-    """Base outage class."""
+    """An outage.
+
+    Attributes:
+        start (:class:`~arrow.arrow.Arrow`): the start time of the
+            outage period.
+        finish (:class:`~arrow.arrow.Arrow`): the ending time of the
+            outage period.
+        before (:class:`~arrow.arrow.Arrow`, optional): last time check was ok,
+            if available.
+        after (:class:`~arrow.arrow.Arrow`, optional): next time check was ok,
+            if available.
+        meta: (dict, optinal): arbitrary metadata about this outage.
+
+    """
 
     start = attr.ib(convert=optional(arrow.get))
     finish = attr.ib(convert=optional(arrow.get))
@@ -22,14 +40,57 @@ class Outage(object):
     meta = attr.ib(default=attr.Factory(dict))
 
     def for_json(self):
+        """Return a representation of this object as a dict.
+
+        Example:
+
+            >>> t = arrow.utcnow()
+            >>> Outage(t, t).for_json() == {
+            ...    "start": t,
+            ...    "finish": t,
+            ...    "before": None,
+            ...    "after": None,
+            ...    "meta": {}
+            ... }
+            True
+
+        Returns:
+            list: a list of names as (:class:`str`) instances.
+        """
         return attr.asdict(self)
 
     @classmethod
     def fields(cls):
+        """Return the field names for this class.
+
+        Example:
+
+            >>> Outage.fields()
+            ['start', 'finish', 'before', 'after', 'meta']
+
+        Returns:
+            list: a list of names as (:class:`str`) instances.
+        """
         return list(map(attrgetter('name'), attr.fields(cls)))
 
 
 def write_outages_csv(fhandle, outages):
+    """Write a list of outages to a file as CSV.
+
+    Example:
+
+        >>> from six import StringIO
+        >>> s = StringIO()
+        >>> t = arrow.get(0)
+        >>> write_outages_csv(s, [Outage(t, t)])
+        >>> s.getvalue()
+        'start,finish,before,after,meta\\r\\n1970-01-01T00:00:00+00:00,1970-01-01T00:00:00+00:00,,,{}\\r\\n'
+
+    Args:
+        fhandle (io.TextIOWrapper): the file object to write the CSV data to
+        outages (list): a list of :class:`Outage` objects to write.
+
+    """
     writer = csv.DictWriter(fhandle, Outage.fields())
     writer.writeheader()
     writer.writerows([o.for_json() for o in outages])
@@ -102,15 +163,33 @@ def print_outages(outages):
 
 
 def filter_outage_len(outages, minlen=0):
+    """Filter-out outages that have a small duration.
+
+    Args:
+        outages (list): list of :class:`Outage` objects
+        minlen (int): the minimum amount of seconds that the outage duration
+            must have
+
+    Yields:
+        Outage: the next outage from the list that has the minimum duration.
+
+    Example:
+
+        >>> outages = [Outage(start=1, finish=5), Outage(start=2, finish=3)]
+        >>> [o.start.timestamp for o in filter_outage_len(outages, minlen=2)]
+        [1]
+
+    """
+
     for o in outages:
         if (o.finish - o.start).seconds >= minlen:
             yield o
 
 
 def get_outages(backend, overlap=0, minlen=0, **kwargs):
-    all_outages = backend.get_outages(**kwargs)
-    outages = filter_outage_len(all_outages, minlen=minlen)
-    return merge_outages(outages, overlap=overlap)
+    return filter_outage_len(
+        merge_outages(backend.get_outages(**kwargs), overlap=overlap),
+        minlen=minlen)
 
 
 def get_downtime_in_seconds(outages, start=None, finish=None):

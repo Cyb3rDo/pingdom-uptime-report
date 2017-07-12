@@ -1,4 +1,17 @@
 # -*- coding: utf-8 -*-
+"""Uptime report CLI.
+
+This module contains all CLI entrypoints. Command line argument parsing and
+execution is implemented via `clize`_.
+
+Examples::
+
+    $ python -m uptime_report.cli --version
+
+.. _clize:
+   https://github.com/epsy/clize
+
+"""
 from __future__ import print_function, unicode_literals
 
 import json
@@ -24,10 +37,13 @@ except ImportError:
 
 
 DEFAULT_BACKEND = 'pingdom'
+"""str: name of default backend module."""
 
 
 @parser.value_converter
 class Format(Enum):
+    """Enumeration of existing output format types."""
+
     TEXT = 'txt'
     CSV = 'csv'
     JSON = 'json'
@@ -37,6 +53,8 @@ DEFAULT_FORMAT = Format.TEXT
 
 
 class TimeUnits(Enum):
+    """Enumeration of time division abbreviations."""
+
     minutes = 'm'
     hours = 'h'
     days = 'd'
@@ -46,6 +64,42 @@ class TimeUnits(Enum):
 
 @parser.value_converter
 def get_time(value, now=None):
+    """Convert a parameter to a timestamp.
+
+    Based on the passed value create a timestamp that represents the
+    value. Both absolute and relative forms are supported::
+
+    Example:
+
+        >>> get_time('2017-06-03')
+        1496448000
+        >>> now = arrow.utcnow().replace(microsecond=0).timestamp
+        >>> get_time('+2d') == now + 2*60*60*24
+        True
+
+    Additionally, for relative values, the current time can be specified by
+    passing an :class:`~arrow.arrow.Arrow` instance as the ``now``
+    argument::
+
+    Example:
+
+        >>> today = get_time('2017-06-03')
+        >>> get_time('+1d', arrow.get(today))
+        1496534400
+
+    Args:
+        value (str): the value to convert
+        now (:obj:`~arrow.arrow.Arrow`, optional): the base time to use
+            for relative values.
+
+    Returns:
+        int: a timestamp
+
+    Raises:
+        clize.errors.CliValueError: if the value cannot be converted.
+
+    """
+
     now = arrow.utcnow() if not now else now.replace(microsecond=0)
     if not value:
         return now.timestamp
@@ -70,6 +124,25 @@ def get_time(value, now=None):
 
 @parser.value_converter
 def get_log_level(level):
+    """Convert a value to a log level.
+
+    Converts a case-insensitive log level name to the corresponding
+    integer value from Python's :mod:`logging` package::
+
+    Example:
+
+        >>> assert logging.DEBUG == get_log_level('debug')
+
+    Args:
+        level (str): the value to convert
+
+    Returns:
+        int: a log level from the :mod:`logging` package.
+
+    Raises:
+        clize.errors.CliValueError: if the value cannot be converted.
+
+    """
     try:
         return getattr(logging, level.upper())
     except AttributeError:

@@ -56,6 +56,11 @@ def test_outages(capsys, mocker, ungrouped_outage_data):
     assert json.loads(out) == [
         {'after': None,
          'before': None,
+         'finish': '2017-07-06T20:28:01+00:00',
+         'meta': {},
+         'start': '2017-07-06T13:28:01+00:00'},
+        {'after': None,
+         'before': None,
          'finish': '2017-07-08T03:28:01+00:00',
          'meta': {},
          'start': '2017-07-07T21:28:01+00:00'},
