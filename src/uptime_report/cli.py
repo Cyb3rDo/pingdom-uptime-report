@@ -3,16 +3,19 @@ from __future__ import print_function, unicode_literals
 
 import json
 import logging
+import sys
 from enum import Enum
+from operator import attrgetter
 
 import arrow
-from clize import errors, parser, run
+from clize import errors, parameters, parser, run
 from sigtools import modifiers, wrappers
 from uptime_report._version import get_versions
 from uptime_report.backends import get_backend, list_backends
 from uptime_report.config import read_config, write_config
 from uptime_report.outage import (encode_outage, get_downtime_in_seconds,
-                                  get_outages, print_outages)
+                                  get_outages, print_outages,
+                                  write_outages_csv)
 
 try:
     import requests_cache
@@ -21,6 +24,16 @@ except ImportError:
 
 
 DEFAULT_BACKEND = 'pingdom'
+
+
+@parser.value_converter
+class Format(Enum):
+    TEXT = 'txt'
+    CSV = 'csv'
+    JSON = 'json'
+
+
+DEFAULT_FORMAT = Format.TEXT
 
 
 class TimeUnits(Enum):
@@ -65,7 +78,7 @@ def get_log_level(level):
 
 
 @wrappers.decorator
-@modifiers.kwoargs('log_level', 'use_cache')
+@modifiers.autokwoargs
 @modifiers.annotate(log_level=get_log_level)
 def with_common_args(
         wrapped, log_level=None, use_cache=False, *args, **kwargs):
@@ -79,7 +92,7 @@ def with_common_args(
 
 
 @wrappers.decorator
-@modifiers.kwoargs('backend')
+@modifiers.autokwoargs
 def with_backend(wrapped, backend=DEFAULT_BACKEND, *args, **kwargs):
     try:
         config = read_config()[backend]
@@ -91,10 +104,10 @@ def with_backend(wrapped, backend=DEFAULT_BACKEND, *args, **kwargs):
 
 
 @wrappers.decorator
-@modifiers.kwoargs('overlap', 'minlen')
+@modifiers.autokwoargs
 @modifiers.annotate(start=get_time, finish=get_time)
 def with_filters(
-        wrapped, start=None, finish=None, overlap=0, minlen=300,
+        wrapped, start, finish, overlap=0, minlen=300,
         *args, **kwargs):
     filters = {
         'start': start,
@@ -108,13 +121,15 @@ def with_filters(
 @with_common_args
 @with_filters
 @with_backend
-@modifiers.kwoargs('to_json')
-def outages(filters=None, backend=None, to_json=False):
+@modifiers.annotate(fmt=parameters.one_of(*map(attrgetter('value'), Format)))
+def outages(filters=None, backend=None, fmt=DEFAULT_FORMAT):
     """List outages."""
     outages = get_outages(backend, **filters)
 
-    if to_json:
+    if fmt == Format.JSON:
         print(json.dumps(list(outages), indent=4, default=encode_outage))
+    elif fmt == Format.CSV:
+        write_outages_csv(sys.stdout, outages)
     else:
         print_outages(outages)
 

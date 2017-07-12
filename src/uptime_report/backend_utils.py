@@ -1,9 +1,10 @@
+# -*- coding: utf-8 -*-
 from collections import OrderedDict, defaultdict
 
-from sigtools.modifiers import kwoargs
+from sigtools.modifiers import autokwoargs
 
 
-@kwoargs('limit', 'offset')
+@autokwoargs
 def offset_iter(method, limit=1000, offset=0, *args, **kwargs):
     """Call a method with limit/offset arguments until exhausted.
 

@@ -58,7 +58,7 @@ def test_outages(capsys, mocker, ungrouped_outage_data):
     start = finish.replace(hours=-1)
     cli.outages(
         start=start, finish=finish, overlap=overlap,
-        minlen=minlen, to_json=True)
+        minlen=minlen, fmt=cli.Format.JSON)
     impl.get_outages.assert_called_with(
         start=start, finish=finish)
     out, err = capsys.readouterr()

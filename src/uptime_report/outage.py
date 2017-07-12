@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
+import csv
 import logging
 from itertools import chain
+from operator import attrgetter
 
 import arrow
 import attr
@@ -19,11 +21,22 @@ class Outage(object):
     after = attr.ib(convert=optional(arrow.get), default=None)
     meta = attr.ib(default=attr.Factory(dict))
 
+    def for_json(self):
+        return attr.asdict(self)
+
+    @classmethod
+    def fields(cls):
+        return list(map(attrgetter('name'), attr.fields(cls)))
+
+
+def write_outages_csv(fhandle, outages):
+    writer = csv.DictWriter(fhandle, Outage.fields())
+    writer.writeheader()
+    writer.writerows([o.for_json() for o in outages])
+
 
 def encode_outage(obj):
-    if isinstance(obj, Outage):
-        return attr.asdict(obj)
-    if isinstance(obj, arrow.Arrow):
+    if isinstance(obj, (Outage, arrow.Arrow)):
         return obj.for_json()
     raise TypeError(repr(obj) + " is not JSON serializable")
 
