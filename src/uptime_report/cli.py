@@ -75,7 +75,7 @@ def get_time(value, now=None):
     """Convert a parameter to a timestamp.
 
     Based on the passed value create a timestamp that represents the
-    value. Both absolute and relative forms are supported::
+    value. Both absolute and relative forms are supported.
 
     Example:
 
@@ -89,8 +89,7 @@ def get_time(value, now=None):
     If a time unit is not provided the default is :py:attr:`TimeUnits.days`.
 
     Additionally, for relative values, the current time can be specified by
-    passing an :class:`~arrow.arrow.Arrow` instance as the ``now``
-    argument::
+    passing an :class:`~arrow.arrow.Arrow` instance as the ``now`` argument.
 
     Example:
 
@@ -138,7 +137,7 @@ def get_log_level(level):
     """Convert a value to a log level.
 
     Converts a case-insensitive log level name to the corresponding
-    integer value from Python's :mod:`logging` package::
+    integer value from Python's :mod:`logging` package.
 
     Example:
 
