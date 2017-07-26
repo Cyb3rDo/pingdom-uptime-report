@@ -31,5 +31,5 @@ def test_outages_gsheet(capsys, mocker, ungrouped_outage_data):
     start = finish.replace(hours=-1)
     cli.outages(
         start=start, finish=finish, overlap=overlap,
-        minlen=minlen, fmt=Format.GSHEET)
+        minlen=minlen, fmt=Format.GSHEET, config='tests/config/pingdom')
     assert gsheet.pygsheets.authorize.call_count == 1

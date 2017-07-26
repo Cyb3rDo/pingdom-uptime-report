@@ -36,6 +36,10 @@ DEFAULT_BACKEND = 'pingdom'
 """str: name of default backend module."""
 
 
+DEFAULT_CONFIG = '~/.config/uptime_report.cfg'
+"""str: path to default config file."""
+
+
 @parser.value_converter
 def get_log_level(level):
     """Convert a value to a log level.
@@ -68,10 +72,11 @@ def get_log_level(level):
 @modifiers.autokwoargs
 @modifiers.annotate(log_level=get_log_level)
 def with_common_args(
-        wrapped, log_level=None, use_cache=False, *args, **kwargs):
+        wrapped, log_level=None, use_cache=False, config=DEFAULT_CONFIG,
+        *args, **kwargs):
     """Add common CLI arguments to a method.
 
-    Provides ``--log-level`` and ``--use-cache`` options.
+    Provides ``--log-level``, ``--config`` and ``--use-cache`` options.
 
     Args:
         log_level (int): the log level code to configure logging.
@@ -86,7 +91,7 @@ def with_common_args(
             requests_cache.install_cache()
         else:
             print("Cache disabled, missing requests-cache module.")
-    return wrapped(*args, **kwargs)
+    return wrapped(config=read_config(config), *args, **kwargs)
 
 
 @wrappers.decorator
@@ -102,11 +107,11 @@ def with_backend(wrapped, backend=DEFAULT_BACKEND, *args, **kwargs):
         clize.errors.CliValueError: if the backend configuration is missing
     """
     try:
-        config = read_config()[backend]
-    except KeyError:
+        cfg = kwargs.get('config', {})[backend]
+    except (TypeError, KeyError):
         raise errors.CliValueError(
             "Missing configuration for backend {}".format(backend))
-    impl = get_backend(backend).from_config(config)
+    impl = get_backend(backend).from_config(cfg)
     return wrapped(backend=impl, *args, **kwargs)
 
 
@@ -145,16 +150,22 @@ def with_filters(
 @with_filters
 @with_backend
 @with_format
-def outages(filters=None, backend=None, fmt=None):
+def outages(filters=None, backend=None, fmt=None, config=None):
     """List outages.
 
     Args:
         filters (dict): parameters to filter outages with.
         backend (object): the backend instace object
         fmt (Format): what format to output data as.
+        config (dict): the settings object
     """
     outages = get_outages(backend, **filters)
-    fmt.writer(sys.stdout, outages, fields=Outage.fields)
+    try:
+        cfg = config[fmt.value]
+    except (TypeError, KeyError):
+        raise errors.CliValueError(
+            "Missing configuration for format {}".format(fmt.value))
+    fmt.writer(sys.stdout, outages, fields=Outage.fields, config=cfg)
 
 
 @with_common_args
