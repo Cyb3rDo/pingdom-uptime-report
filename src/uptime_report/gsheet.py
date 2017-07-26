@@ -1,2 +1,3 @@
 # -*- coding: utf-8 -*-
-SheetWriter = None
+pygsheets = None
+Writer = None

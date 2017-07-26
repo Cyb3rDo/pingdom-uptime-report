@@ -12,7 +12,7 @@ from operator import attrgetter
 
 from clize import errors, parameters, parser
 from sigtools import modifiers, wrappers
-from uptime_report.gsheet import SheetWriter
+from uptime_report.gsheet import Writer
 
 
 @parser.value_converter
@@ -42,6 +42,6 @@ def with_format(wrapped, fmt=DEFAULT_FORMAT, *args, **kwargs):
     Raises:
         clize.errors.CliValueError: if the format argument is invalid.
     """
-    if fmt == 'gsheet' and SheetWriter is None:
+    if fmt == 'gsheet' and Writer is None:
         raise errors.CliValueError('pygsheets module is required.')
     return wrapped(fmt=Format(fmt), *args, **kwargs)

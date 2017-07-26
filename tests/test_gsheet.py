@@ -2,13 +2,13 @@
 import arrow
 import pytest
 from clize import errors
-from uptime_report import cli
+from uptime_report import cli, gsheet
 from uptime_report.format import with_format
 from uptime_report.outage import Outage
 
 
 def test_outages_missing_req(mocker):
-    mocker.patch('uptime_report.format.SheetWriter', new=None)
+    mocker.patch('uptime_report.format.Writer', new=None)
 
     @with_format
     def wrapped(fmt=None):
@@ -18,6 +18,7 @@ def test_outages_missing_req(mocker):
 
 
 def test_outages_gsheet(capsys, mocker, ungrouped_outage_data):
+    mocker.patch('uptime_report.gsheet.pygsheets')
     mocker.patch('uptime_report.cli.read_config')
     b = mocker.patch('uptime_report.cli.get_backend')
     impl = b.return_value.from_config.return_value
@@ -31,3 +32,4 @@ def test_outages_gsheet(capsys, mocker, ungrouped_outage_data):
     cli.outages(
         start=start, finish=finish, overlap=overlap,
         minlen=minlen, fmt=cli.Format.GSHEET)
+    assert gsheet.pygsheets.authorize.call_count == 1
