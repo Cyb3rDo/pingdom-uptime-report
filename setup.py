@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 import setuptools
 
 import versioneer
@@ -41,6 +42,11 @@ setuptools.setup(
     entry_points={
         'console_scripts': [
             'uptimereport = uptime_report.cli:main',
+        ]
+    },
+    extras_require={
+        'gsheet': [
+            'pygsheets',
         ]
     },
     keywords="pingdom uptime sla api"
