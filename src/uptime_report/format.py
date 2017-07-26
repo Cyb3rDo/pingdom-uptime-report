@@ -21,6 +21,7 @@ class Format(Enum):
     TEXT = 'txt'
     CSV = 'csv'
     JSON = 'json'
+    GSHEET = 'gsheet'
 
 
 DEFAULT_FORMAT = Format.TEXT
