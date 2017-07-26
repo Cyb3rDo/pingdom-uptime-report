@@ -1,7 +1,20 @@
 # -*- coding: utf-8 -*-
 import arrow
+import pytest
+from clize import errors
 from uptime_report import cli
+from uptime_report.format import with_format
 from uptime_report.outage import Outage
+
+
+def test_outages_missing_req(mocker):
+    mocker.patch('uptime_report.format.SheetWriter', new=None)
+
+    @with_format
+    def wrapped(fmt=None):
+        pass
+    with pytest.raises(errors.CliValueError):
+        wrapped(fmt='gsheet')
 
 
 def test_outages_gsheet(capsys, mocker, ungrouped_outage_data):
