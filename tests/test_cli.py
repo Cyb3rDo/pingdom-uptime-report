@@ -8,6 +8,7 @@ import pytest
 from clize import errors, run
 from six import StringIO
 from uptime_report import cli
+from uptime_report.format import Format
 from uptime_report.outage import Outage
 
 
@@ -49,7 +50,7 @@ def test_outages(capsys, mocker, ungrouped_outage_data):
     start = finish.replace(hours=-1)
     cli.outages(
         start=start, finish=finish, overlap=overlap,
-        minlen=minlen, fmt=cli.Format.JSON)
+        minlen=minlen, fmt=Format.JSON)
     impl.get_outages.assert_called_with(
         start=start, finish=finish)
     out, err = capsys.readouterr()

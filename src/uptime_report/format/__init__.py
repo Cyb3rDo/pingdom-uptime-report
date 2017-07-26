@@ -7,12 +7,12 @@ This module contains `clize`_. related to formats.
    https://github.com/epsy/clize
 
 """
+import importlib
 from enum import Enum
 from operator import attrgetter
 
 from clize import errors, parameters, parser
 from sigtools import modifiers, wrappers
-from uptime_report.gsheet import Writer
 
 
 @parser.value_converter
@@ -23,6 +23,11 @@ class Format(Enum):
     CSV = 'csv'
     JSON = 'json'
     GSHEET = 'gsheet'
+
+    @property
+    def writer(self):
+        mod = importlib.import_module('.' + self.value, __name__)
+        return mod.Writer
 
 
 DEFAULT_FORMAT = Format.TEXT
@@ -42,6 +47,7 @@ def with_format(wrapped, fmt=DEFAULT_FORMAT, *args, **kwargs):
     Raises:
         clize.errors.CliValueError: if the format argument is invalid.
     """
-    if fmt == 'gsheet' and Writer is None:
-        raise errors.CliValueError('pygsheets module is required.')
+    if fmt.writer is None:
+        raise errors.CliValueError(
+            '{} is unavailable (missing requirements?)'.format(fmt.value))
     return wrapped(fmt=Format(fmt), *args, **kwargs)

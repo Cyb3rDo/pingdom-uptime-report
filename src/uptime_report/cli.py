@@ -14,7 +14,6 @@ Examples::
 """
 from __future__ import print_function, unicode_literals
 
-import json
 import logging
 import sys
 
@@ -23,10 +22,8 @@ from sigtools import modifiers, wrappers
 from uptime_report._version import get_versions
 from uptime_report.backends import get_backend, list_backends
 from uptime_report.config import read_config, write_config
-from uptime_report.format import Format, with_format
-from uptime_report.outage import (encode_outage, get_downtime_in_seconds,
-                                  get_outages, print_outages,
-                                  write_outages_csv)
+from uptime_report.format import with_format
+from uptime_report.outage import Outage, get_downtime_in_seconds, get_outages
 from uptime_report.time import get_time
 
 try:
@@ -157,13 +154,7 @@ def outages(filters=None, backend=None, fmt=None):
         fmt (Format): what format to output data as.
     """
     outages = get_outages(backend, **filters)
-
-    if fmt == Format.JSON:
-        print(json.dumps(list(outages), indent=4, default=encode_outage))
-    elif fmt == Format.CSV:
-        write_outages_csv(sys.stdout, outages)
-    elif fmt == Format.TEXT:
-        print_outages(outages)
+    fmt.writer(sys.stdout, outages, fields=Outage.fields)
 
 
 @with_common_args

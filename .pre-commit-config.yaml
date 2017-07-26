@@ -13,10 +13,11 @@
     -   id: debug-statements
     -   id: requirements-txt-fixer
     -   id: name-tests-test
-        args: ['--django']
+        args:
+        - --django
     -   id: pretty-format-json
         args:
-           - --autofix
+        - --autofix
 -   repo: https://github.com/guykisel/prospector-mirror.git
     sha: e0bfe1f71f9b6c81c5b8b8ffece9d89b0142c4b8
     hooks:

@@ -3,7 +3,6 @@
 
 This module contains generic code for processing outages.
 """
-import csv
 import logging
 from itertools import chain
 from operator import attrgetter
@@ -59,6 +58,17 @@ class Outage(object):
         """
         return attr.asdict(self)
 
+    @property
+    def humanized_duration(self):
+        return self.start.humanize(other=self.finish, only_distance=True)
+
+    def humanize(self):
+        return {
+            'Begin': self.start.format(),
+            'End': self.finish.format(),
+            'Duration': self.humanized_duration,
+        }
+
     @classmethod
     def fields(cls):
         """Return the field names for this class.
@@ -72,34 +82,6 @@ class Outage(object):
             list: a list of names as (:class:`str`) instances.
         """
         return list(map(attrgetter('name'), attr.fields(cls)))
-
-
-def write_outages_csv(fhandle, outages):
-    """Write a list of outages to a file as CSV.
-
-    Example:
-
-        >>> from six import StringIO
-        >>> s = StringIO()
-        >>> t = arrow.get(0)
-        >>> write_outages_csv(s, [Outage(t, t)])
-        >>> s.getvalue()
-        'start,finish,before,after,meta\\r\\n1970-01-01T00:00:00+00:00,1970-01-01T00:00:00+00:00,,,{}\\r\\n'
-
-    Args:
-        fhandle (io.TextIOWrapper): the file object to write the CSV data to
-        outages (list): a list of :class:`Outage` objects to write.
-
-    """
-    writer = csv.DictWriter(fhandle, Outage.fields())
-    writer.writeheader()
-    writer.writerows([o.for_json() for o in outages])
-
-
-def encode_outage(obj):
-    if isinstance(obj, (Outage, arrow.Arrow)):
-        return obj.for_json()
-    raise TypeError(repr(obj) + " is not JSON serializable")
 
 
 def merge_outages(outages, overlap=0):
@@ -152,14 +134,6 @@ def merge_outages(outages, overlap=0):
         if groups:
             meta = {'groups': groups}
         yield Outage(start=start, finish=finish, meta=meta)
-
-
-def print_outages(outages):
-    for i, outage in enumerate(outages):
-        print("Outage #{}\nBegin: {}\tEnd: {}\n{}\n".format(
-            i, outage.start.format(), outage.finish.format(),
-            outage.start.humanize(
-                other=outage.finish, only_distance=True)))
 
 
 def filter_outage_len(outages, minlen=0):
