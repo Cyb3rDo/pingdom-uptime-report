@@ -19,7 +19,6 @@ def test_outages_missing_req(mocker):
 
 def test_outages_gsheet(capsys, mocker, ungrouped_outage_data):
     mocker.patch('uptime_report.format.gsheet.pygsheets')
-    mocker.patch('uptime_report.cli.read_config')
     b = mocker.patch('uptime_report.cli.get_backend')
     impl = b.return_value.from_config.return_value
     impl.get_outages.return_value = [
@@ -29,7 +28,10 @@ def test_outages_gsheet(capsys, mocker, ungrouped_outage_data):
     minlen = 3700    # prune 1 hour outages
     finish = arrow.utcnow()
     start = finish.replace(hours=-1)
+    mock_gc = gsheet.pygsheets.authorize.return_value
+    mock_wks = mock_gc.open.return_value.add_worksheet.return_value
     cli.outages(
         start=start, finish=finish, overlap=overlap,
-        minlen=minlen, fmt=Format.GSHEET, config='tests/config/pingdom')
+        minlen=minlen, fmt=Format.GSHEET, config='tests/config/gsheet')
     assert gsheet.pygsheets.authorize.call_count == 1
+    assert mock_wks.update_cells.call_count == 2

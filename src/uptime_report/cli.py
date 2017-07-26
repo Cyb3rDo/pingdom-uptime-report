@@ -165,7 +165,7 @@ def outages(filters=None, backend=None, fmt=None, config=None):
     except (TypeError, KeyError):
         raise errors.CliValueError(
             "Missing configuration for format {}".format(fmt.value))
-    fmt.writer(sys.stdout, outages, fields=Outage.fields, config=cfg)
+    fmt.writer(sys.stdout, outages, fields=Outage.fields(), config=cfg)
 
 
 @with_common_args
