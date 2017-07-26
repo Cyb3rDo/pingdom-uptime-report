@@ -165,6 +165,17 @@ def get_log_level(level):
 @modifiers.annotate(log_level=get_log_level)
 def with_common_args(
         wrapped, log_level=None, use_cache=False, *args, **kwargs):
+    """Add common CLI arguments to a method.
+
+    Provides ``--log-level`` and ``--use-cache`` options.
+
+    Args:
+        log_level (int): the log level code to configure logging.
+        use_cache (bool): True if you want `requests_cache`_ to be used.
+
+    .. _requests_cache:
+       https://github.com/reclosedev/requests-cache
+    """
     logging.basicConfig(level=log_level or logging.ERROR)
     if use_cache:
         if requests_cache:
@@ -177,6 +188,15 @@ def with_common_args(
 @wrappers.decorator
 @modifiers.autokwoargs
 def with_backend(wrapped, backend=DEFAULT_BACKEND, *args, **kwargs):
+    """Provide ``--backend`` option that initializes a backend.
+
+    Args:
+        backend (str, optional): the name of the backend. Defaults to
+            ``'pingdom'``.
+
+    Raises:
+        clize.errors.CliValueError: if the backend configuration is missing
+    """
     try:
         config = read_config()[backend]
     except KeyError:
@@ -192,6 +212,22 @@ def with_backend(wrapped, backend=DEFAULT_BACKEND, *args, **kwargs):
 def with_filters(
         wrapped, start, finish, overlap=0, minlen=300,
         *args, **kwargs):
+    """Provide common filter arguments.
+
+    Args:
+        start (str): the start time in a string parseable by
+            :py:func:`get_time`.
+        finish (str): the finish time in a string parseable by
+            :py:func:`get_time`.
+        overlap (int, optional): how many seconds must be between two outage
+            periods so they don't get merged.
+        minlen (int, optional): how many seconds must an outage period be so
+            that it's not filtered out.
+
+    Raises:
+        clize.errors.CliValueError: if one of the values cannot be converted.
+    """
+
     filters = {
         'start': start,
         'finish': finish,
@@ -201,19 +237,41 @@ def with_filters(
     return wrapped(filters=filters, *args, **kwargs)
 
 
+@wrappers.decorator
+@modifiers.autokwoargs
+@modifiers.annotate(fmt=parameters.one_of(*map(attrgetter('value'), Format)))
+def with_format(wrapped, fmt=DEFAULT_FORMAT, *args, **kwargs):
+    """Provide ``--format`` argument.
+
+    Args:
+        format (str, optional): one of :class:`Format` values. Defaults to
+            ``'text'``.
+
+    Raises:
+        clize.errors.CliValueError: if the format argument is invalid.
+    """
+    return wrapped(fmt=Format(fmt), *args, **kwargs)
+
+
 @with_common_args
 @with_filters
 @with_backend
-@modifiers.annotate(fmt=parameters.one_of(*map(attrgetter('value'), Format)))
-def outages(filters=None, backend=None, fmt=DEFAULT_FORMAT):
-    """List outages."""
+@with_format
+def outages(filters=None, backend=None, fmt=None):
+    """List outages.
+
+    Args:
+        filters (dict): parameters to filter outages with.
+        backend (object): the backend instace object
+        fmt (Format): what format to output data as.
+    """
     outages = get_outages(backend, **filters)
 
     if fmt == Format.JSON:
         print(json.dumps(list(outages), indent=4, default=encode_outage))
     elif fmt == Format.CSV:
         write_outages_csv(sys.stdout, outages)
-    else:
+    elif fmt == Format.TEXT:
         print_outages(outages)
 
 
