@@ -4,7 +4,7 @@ from __future__ import print_function, unicode_literals
 import logging
 from os.path import expanduser
 
-from clize.converters import file
+from clize import converters
 from configobj import ConfigObj
 from sigtools import modifiers
 from uptime_report.backends import backend_config, get_backend, list_backends
@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 
 
 @modifiers.autokwoargs
-@modifiers.annotate(output=file(keep_stdio_open=True, mode='wb'))
+@modifiers.annotate(output=converters.file(keep_stdio_open=True, mode='wb'))
 def write_config(output='-'):
     """Write out a sample config file. Use '-' for stdout.
 
