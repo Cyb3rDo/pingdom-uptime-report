@@ -107,6 +107,9 @@ def test_with_common_args(mocker):
     doit(use_cache=True)
     cli.requests_cache.install_cache.assert_called_once()
 
+    cli.requests_cache = None
+    doit(use_cache=True)
+
     run(doit, args=('', '--log-level=debug'), exit=False)
 
     cli.logging.basicConfig.assert_called_with(level='blabla')

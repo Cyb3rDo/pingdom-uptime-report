@@ -32,6 +32,9 @@ except ImportError:
     requests_cache = None
 
 
+log = logging.getLogger(__name__)
+"""cli module logger."""
+
 DEFAULT_BACKEND = 'pingdom'
 """str: name of default backend module."""
 
@@ -90,7 +93,7 @@ def with_common_args(
         if requests_cache:
             requests_cache.install_cache()
         else:
-            print("Cache disabled, missing requests-cache module.")
+            log.warning("Cache disabled, missing requests-cache module.")
     return wrapped(config=read_config(config), *args, **kwargs)
 
 
