@@ -204,11 +204,18 @@ def with_filters(
     return wrapped(filters=filters, *args, **kwargs)
 
 
+@wrappers.decorator
+@modifiers.autokwoargs
+@modifiers.annotate(fmt=parameters.one_of(*map(attrgetter('value'), Format)))
+def with_format(wrapped, fmt=DEFAULT_FORMAT, *args, **kwargs):
+    return wrapped(fmt=Format(fmt), *args, **kwargs)
+
+
 @with_common_args
 @with_filters
 @with_backend
-@modifiers.annotate(fmt=parameters.one_of(*map(attrgetter('value'), Format)))
-def outages(filters=None, backend=None, fmt=DEFAULT_FORMAT):
+@with_format
+def outages(filters=None, backend=None, fmt=None):
     """List outages."""
     outages = get_outages(backend, **filters)
 
