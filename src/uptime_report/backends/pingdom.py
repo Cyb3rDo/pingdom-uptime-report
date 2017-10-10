@@ -8,6 +8,7 @@ import arrow
 import attr
 from attr.validators import in_
 from pingdomlib import Pingdom
+from sigtools import wrappers
 from six.moves import map
 from uptime_report.backend_utils import group_by_range, offset_iter
 from uptime_report.outage import Outage
@@ -56,9 +57,30 @@ def make_result(check, item):
     )
 
 
+@attr.s
+class MaxOffsetReached(Exception):
+    offset = attr.ib()
+
+
+@wrappers.decorator
+def continue_offset(wrapped, *args, **kwargs):
+    result = None
+    retries = 0
+    while True:
+        try:
+            for result in wrapped(*args, **kwargs):
+                yield result
+            break
+        except MaxOffsetReached:
+            if retries == 3 or not result:
+                raise Exception("Too much data!")
+            retries += 1
+            kwargs['start'] = result.time.shift(seconds=1)
+
+
 def check_results(check, start=None, finish=None, *args, **kwargs):
     if 'offset' in kwargs and kwargs['offset'] > 43200:
-        raise Exception('Maximum value for offset reached.')
+        raise MaxOffsetReached(kwargs['offset'])
     data = check.results(
         time_from=start, time_to=finish, *args, **kwargs)
     return map(partial(make_result, check), data['results'])
@@ -104,6 +126,7 @@ class PingdomBackend(object):
     def get_checks(self):
         return offset_iter(self._connection.getChecks)
 
+    @continue_offset
     def get_results(self, start=None, finish=None,
                     status=None, checks=None, *args, **kwargs):
         """Iterate over results in the given timeframe.
@@ -124,6 +147,7 @@ class PingdomBackend(object):
             n = 0
             for n, result in enumerate(offset_iter(getter, *args, **kwargs)):
                 yield result
+
             log.debug("%s: processed check %s: %s results", self, check, n)
 
     def get_outages(self, *args, **kwargs):
