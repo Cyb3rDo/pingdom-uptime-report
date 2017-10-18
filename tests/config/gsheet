@@ -1,0 +1,7 @@
+[pingdom]
+apikey=3
+password=2
+username=1
+include_ok=False
+
+[gsheet]
