@@ -47,6 +47,7 @@ DEFAULT_FORMAT = Format.TEXT
 @wrappers.decorator
 @modifiers.autokwoargs
 @modifiers.annotate(fmt=parameters.one_of(*map(attrgetter('value'), Format)))
+@modifiers.annotate(kwargs=parser.Parameter.IGNORE)
 def with_format(wrapped, fmt=DEFAULT_FORMAT, *args, **kwargs):
     """Provide ``--format`` argument.
 

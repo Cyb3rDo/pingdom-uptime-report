@@ -74,6 +74,7 @@ def get_log_level(level):
 @wrappers.decorator
 @modifiers.autokwoargs
 @modifiers.annotate(log_level=get_log_level)
+@modifiers.annotate(kwargs=parser.Parameter.IGNORE)
 def with_common_args(
         wrapped, log_level=None, use_cache=False, config=DEFAULT_CONFIG,
         *args, **kwargs):
@@ -99,6 +100,7 @@ def with_common_args(
 
 @wrappers.decorator
 @modifiers.autokwoargs
+@modifiers.annotate(kwargs=parser.Parameter.IGNORE)
 def with_backend(wrapped, backend=DEFAULT_BACKEND, *args, **kwargs):
     """Provide ``--backend`` option that initializes a backend.
 
@@ -121,6 +123,7 @@ def with_backend(wrapped, backend=DEFAULT_BACKEND, *args, **kwargs):
 @wrappers.decorator
 @modifiers.autokwoargs
 @modifiers.annotate(start=get_time, finish=get_time)
+@modifiers.annotate(kwargs=parser.Parameter.IGNORE)
 def with_filters(
         wrapped, start, finish, overlap=0, minlen=300,
         *args, **kwargs):
