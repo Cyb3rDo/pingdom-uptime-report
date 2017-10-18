@@ -8,6 +8,7 @@ This module contains `clize`_. related to formats.
 
 """
 import importlib
+import logging
 from enum import Enum
 from operator import attrgetter
 
@@ -15,19 +16,28 @@ from clize import errors, parameters, parser
 from sigtools import modifiers, wrappers
 
 
+log = logging.getLogger(__name__)
+"""formats module logger."""
+
+
 @parser.value_converter
 class Format(Enum):
     """Enumeration of existing output format types."""
 
-    TEXT = 'txt'
+    TEXT = 'text'
     CSV = 'csv'
     JSON = 'json'
     GSHEET = 'gsheet'
 
     @property
     def writer(self):
-        mod = importlib.import_module('.' + self.value, __name__)
-        return mod.Writer
+        try:
+            mod = importlib.import_module('.' + self.value, __name__)
+            return mod.Writer
+        except (ImportError, AttributeError):
+            log.warning(
+                "%s format has no writer implementation",
+                self.value, exc_info=True)
 
 
 DEFAULT_FORMAT = Format.TEXT

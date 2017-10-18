@@ -9,7 +9,7 @@ def write_text(out, data, **_):
         except AttributeError:
             obj = obj.for_json()
         out.write("\n".join(
-            ": ".join(i) for i in obj.items()))
+            "{}: {}".format(k, obj[k]) for k in sorted(obj)))
         out.write("\n")
 
 
